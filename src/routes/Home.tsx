@@ -3,11 +3,30 @@ import { Outlet, useLocation, useNavigate } from "react-router";
 import { LayoutGrid, Settings, CalendarDays, ChartPie } from "lucide-react";
 import { useBudgetStore } from "@/state";
 import { UrlDialog } from "@/components/UrlDialog";
+import { useEffect, useState } from "react";
+import { PropagateLoader } from "react-spinners";
 
 export default function Home(){
     const budgetUrl = useBudgetStore(state => state.budgetUrl);
+    const setBudgetUrl = useBudgetStore(state => state.setBudgetUrl);
+    const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
-    return <>
+
+    useEffect(() => {
+
+      if(!budgetUrl){
+        let urls = localStorage.getItem("urls");
+        if (urls){
+          setLoading(true);
+          setBudgetUrl(JSON.parse(urls)).then(()=> setLoading(false));
+        } else {
+          setLoading(false);
+        }
+      }
+
+    }, [budgetUrl])
+
+    return loading ? <div className="w-full h-dvh flex flex-1 justify-center items-center"><PropagateLoader /></div> : <>
       {!budgetUrl && <UrlDialog />}
       <Tabs defaultValue="categories"  onValueChange={(value) => { navigate(`/${value}`) }}>
         <Outlet />

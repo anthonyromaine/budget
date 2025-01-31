@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import axios from 'axios';
-import * as xlsx from 'xlsx';
+import Papa from 'papaparse';
 
 type Category = {
     name: string,
@@ -9,26 +9,38 @@ type Category = {
     icon: "string"
 }
 
+type BudgetUrls = {budget: string, transactions: string, categories: string};
+
 interface BudgetState {
-    budgetUrl: string | null,
+    budgetUrl: boolean,
     categories: Category[],
-    setBudgetUrl: (budgetUrl: string) => Promise<void>
+    setBudgetUrl: (urls: BudgetUrls) => Promise<void>
 }
 
 export const useBudgetStore = create<BudgetState>((set, get) => ({
-    budgetUrl: null,
+    budgetUrl: false,
     categories: [],
-    setBudgetUrl: async (budgetUrl: string) => {
-        let budgetData = (await axios.get(budgetUrl, {
-            responseType: "arraybuffer"
-        })).data;
-        let workbook = xlsx.read(budgetData, {
-            type: 'array'
-        })
+    setBudgetUrl: async (urls: BudgetUrls) => {
+        // fetch data
+        let budgetData = (await axios.get(urls.budget)).data;
+        let transactionData = (await axios.get(urls.transactions)).data;
+        let categoriesData = (await axios.get(urls.categories)).data;
 
-        for (let sheetName of workbook.SheetNames){
-            console.log(workbook.Sheets[sheetName])
-            console.log(xlsx.utils.sheet_to_json(workbook.Sheets[sheetName]))
-        }
+        // parse csv
+        budgetData = Papa.parse(budgetData, {
+            header: true
+        });
+
+        transactionData = Papa.parse(transactionData, {
+            header: true
+        });
+
+        categoriesData = Papa.parse(categoriesData, {
+            header: true
+        });
+
+        localStorage.setItem("urls", JSON.stringify(urls));
+        console.log(budgetData, transactionData, categoriesData);
+        set({ budgetUrl: true });
     },
 }))

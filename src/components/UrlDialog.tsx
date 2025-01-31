@@ -24,15 +24,19 @@ import { Label } from "@/components/ui/label"
 import { useBudgetStore } from "@/state"
 
 export function UrlDialog() {
-  const [open, setOpen] = React.useState(true)
+  const [open, setOpen] = React.useState(true);
   const budgetUrl = useBudgetStore(state => state.budgetUrl);
-  const isDesktop = useMediaQuery("(min-width: 768px)")
+  const isDesktop = useMediaQuery("(min-width: 768px)");
+
+  React.useEffect(() => {
+
+  }, []);
 
   if (isDesktop) {
     return (
       <Dialog open={open} onOpenChange={(change) => {
             if (!change && !budgetUrl){
-                return;
+              return;
             }
             setOpen(change);
         }}>
@@ -81,14 +85,24 @@ function UrlForm({ className }: React.ComponentProps<"form">) {
     <form className={cn("grid items-start gap-4", className)} onSubmit={(e) => {
         e.preventDefault();
         let data = new FormData(e.target as HTMLFormElement);
-        let budgetUrl = data.get("url") as string;
-        if (budgetUrl.trim()){
-            setBudgetUrl(budgetUrl.trim());
+        let budget = data.get("budget") as string;
+        let transactions = data.get("transactions") as string;
+        let categories = data.get("categories") as string;
+        if (budget.trim() && transactions.trim() && categories.trim()){
+          setBudgetUrl({ budget: budget.trim(), transactions: transactions.trim(), categories: categories.trim() });
         }
     }}>
       <div className="grid gap-2">
-        <Label htmlFor="url">Budget URL</Label>
-        <Input type="url" id="url" defaultValue="" name="url" />
+        <Label htmlFor="budget">Budget URL</Label>
+        <Input type="budget" id="budget" defaultValue="" name="budget" />
+      </div>
+      <div className="grid gap-2">
+        <Label htmlFor="transactions">Transactions URL</Label>
+        <Input type="transactions" id="transactions" defaultValue="" name="transactions" />
+      </div>
+      <div className="grid gap-2">
+        <Label htmlFor="categories">Categories URL</Label>
+        <Input type="categories" id="categories" defaultValue="" name="categories" />
       </div>
       <Button type="submit">Save changes</Button>
     </form>
