@@ -8,9 +8,13 @@ type Category = {
 }
 
 interface BudgetState {
-    categories: Category[]
+    budgetUrl: string | null,
+    categories: Category[],
+    setBudgetUrl: (budgetUrl: string) => void
 }
 
-const useBudgetStore = create<BudgetState>((set) => ({
-    categories: []
+export const useBudgetStore = create<BudgetState>((set) => ({
+    budgetUrl: null,
+    categories: [],
+    setBudgetUrl: (budgetUrl: string) => set({ budgetUrl }),
 }))
