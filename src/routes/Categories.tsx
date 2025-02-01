@@ -1,3 +1,5 @@
 export default function Categories(){
-    return <div>Categories</div>
+    return <div>
+        Categories
+    </div>
 }
