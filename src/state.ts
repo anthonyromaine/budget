@@ -41,6 +41,28 @@ interface BudgetState {
     setBudgetUrl: (urls: BudgetUrls) => Promise<void>
 }
 
+function convertBudgetCSV(monthlyBudget: BudgetCSV){
+    let entries = Object.entries(monthlyBudget);
+    let date, budget, categories = [];
+    
+    for (let [key, value] of entries){
+        if (key == "Date"){
+            date = monthlyBudget.Date.trim() ? new Date(monthlyBudget.Date.trim()) : undefined;
+        } else if(key == "Budget"){
+            budget = monthlyBudget.Budget.trim() ? Number(monthlyBudget.Budget.trim()): undefined;
+        } else {
+            // everything else should be a category
+            categories.push({ name: key.trim(), amount: value.trim() ? Number(value.trim()) : undefined })
+        }
+    }
+
+    let newBudget = ValidBudget({ budget, date, categories });
+
+    if (!(newBudget instanceof type.errors)){
+        return newBudget;
+    }
+}
+
 export const useBudgetStore = create<BudgetState>((set, get) => ({
     budgetUrl: false,
     categories: [],
@@ -64,30 +86,9 @@ export const useBudgetStore = create<BudgetState>((set, get) => ({
             header: true
         });
 
-        console.log(budgetCSVData)
-
         // convert data
-        let budget: Budget[] = budgetCSVData.map((monthlyBudget) => {
-            let entries = Object.entries(monthlyBudget);
-            let date, budget, categories = [];
-            
-            for (let [key, value] of entries){
-                if (key == "Date"){
-                    date = monthlyBudget.Date.trim() ? new Date(monthlyBudget.Date.trim()) : undefined;
-                } else if(key == "Budget"){
-                    budget = monthlyBudget.Budget.trim() ? Number(monthlyBudget.Budget.trim()): undefined;
-                } else {
-                    // everything else should be a category
-                    categories.push({ name: key.trim(), amount: value.trim() ? Number(value.trim()) : undefined })
-                }
-            }
-
-            let newBudget = ValidBudget({ budget, date, categories });
-
-            if (!(newBudget instanceof type.errors)){
-                return newBudget;
-            }
-        }).filter(monthlyBudget => monthlyBudget);
+        //@ts-ignore (undefined items are filtered out, everything else has already been validated)
+        let budget: Budget[] = budgetCSVData.map(convertBudgetCSV).filter(monthlyBudget => monthlyBudget);
 
         localStorage.setItem("urls", JSON.stringify(urls));
         console.log(budgetData, transactionData, categoriesData);
