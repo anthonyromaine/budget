@@ -3,13 +3,6 @@ import axios from 'axios';
 import Papa from 'papaparse';
 import { type } from 'arktype';
 
-type Category = {
-    name: string,
-    type: "expense" | "income",
-    color: "string",
-    icon: "string"
-}
-
 type BudgetCSV = {
     Date: string,
     Budget: string,
@@ -25,6 +18,13 @@ type TransactionCSV = {
     Amount: string,	
     Note: string,	
     Tags: string
+}
+
+type CategoryCSV = {
+    Name: string,	
+    Type: string,	
+    Color: string,	
+    Icon: string
 }
 
 type BudgetUrls = {budget: string, transactions: string, categories: string};
@@ -51,6 +51,15 @@ const ValidTransaction = type({
 });
 
 type Transaction = typeof ValidTransaction.infer;
+
+const ValidCategory = type({
+    name: 'string',
+    color: 'string',
+    type: "'income' | 'expense'",
+    icon: 'string'
+});
+
+type Category = typeof ValidCategory.infer;
 
 interface BudgetState {
     budgetUrl: boolean,
@@ -94,6 +103,17 @@ function convertTransactionsCSV(transaction: TransactionCSV){
     return newTransaction instanceof type.errors ? undefined : newTransaction;
 }
 
+function convertCategoryCSV(category: CategoryCSV){
+    const newCategory = ValidCategory({
+        name: category.Name.trim() ? category.Name.trim() : undefined,
+        type: category.Type.trim() ? category.Type.trim().toLowerCase() : undefined,
+        color: category.Color.trim() ? category.Color.trim() : undefined,
+        icon: category.Icon.trim() ? category.Icon.trim() : undefined
+    });
+
+    return newCategory instanceof type.errors ? undefined : newCategory;
+}
+
 export const useBudgetStore = create<BudgetState>((set, get) => ({
     budgetUrl: false,
     categories: [],
@@ -114,7 +134,7 @@ export const useBudgetStore = create<BudgetState>((set, get) => ({
             header: true
         }).data;
 
-        let categoriesCSVData = Papa.parse(categoriesData, {
+        let categoriesCSVData: CategoryCSV[] = Papa.parse(categoriesData, {
             header: true
         }).data;
 
@@ -123,8 +143,11 @@ export const useBudgetStore = create<BudgetState>((set, get) => ({
         let budget: Budget[] = budgetCSVData.map(convertBudgetCSV).filter(monthlyBudget => monthlyBudget);
         //@ts-ignore (undefined items are filtered out, everything else has already been validated)
         let transactions: Transaction[] = transactionCSVData.map(convertTransactionsCSV).filter(transaction => transaction);
+        //@ts-ignore (undefined items are filtered out, everything else has already been validated)
+        let categories: Category[] = categoriesCSVData.map(convertCategoryCSV).filter(category => category);
 
         localStorage.setItem("urls", JSON.stringify(urls));
-        set({ budgetUrl: true, budget });
+        console.log({ budgetUrl: true, budget, transactions, categories });
+        set({ budgetUrl: true, budget, transactions, categories });
     },
 }))
