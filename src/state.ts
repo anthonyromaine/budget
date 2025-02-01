@@ -19,6 +19,14 @@ type BudgetCSV = {
     Needs: string
 }
 
+type TransactionCSV = {
+    Date: string,	
+    Category: string,	
+    Amount: string,	
+    Note: string,	
+    Tags: string
+}
+
 type BudgetUrls = {budget: string, transactions: string, categories: string};
 
 const ValidCategories = type({
@@ -34,10 +42,21 @@ const ValidBudget = type({
 
 type Budget = typeof ValidBudget.infer;
 
+const ValidTransaction = type({
+    date: 'Date',
+    category: 'string',
+    amount: 'number',
+    note: 'string',
+    tags: 'string[]'
+});
+
+type Transaction = typeof ValidTransaction.infer;
+
 interface BudgetState {
     budgetUrl: boolean,
     categories: Category[],
     budget: Budget[],
+    transactions: Transaction[],
     setBudgetUrl: (urls: BudgetUrls) => Promise<void>
 }
 
@@ -63,10 +82,23 @@ function convertBudgetCSV(monthlyBudget: BudgetCSV){
     }
 }
 
+function convertTransactionsCSV(transaction: TransactionCSV){
+    const newTransaction = ValidTransaction({
+        date: transaction.Date.trim() ? new Date(transaction.Date.trim()) : undefined,
+        category: transaction.Category.trim() ? transaction.Category.trim() : undefined,
+        amount: transaction.Amount.trim() ? Number(transaction.Amount.trim()) : undefined,
+        note: transaction.Note.trim(),
+        tags: transaction.Tags.trim() ? transaction.Tags.trim().split(',').map(tag => tag.trim()).filter(tag => tag) : []
+    });
+
+    return newTransaction instanceof type.errors ? undefined : newTransaction;
+}
+
 export const useBudgetStore = create<BudgetState>((set, get) => ({
     budgetUrl: false,
     categories: [],
     budget: [],
+    transactions: [],
     setBudgetUrl: async (urls: BudgetUrls) => {
         // fetch data
         let budgetData = (await axios.get(urls.budget)).data;
@@ -78,20 +110,21 @@ export const useBudgetStore = create<BudgetState>((set, get) => ({
             header: true
         }).data;
 
-        transactionData = Papa.parse(transactionData, {
+        let transactionCSVData: TransactionCSV[] = Papa.parse(transactionData, {
             header: true
-        });
+        }).data;
 
-        categoriesData = Papa.parse(categoriesData, {
+        let categoriesCSVData = Papa.parse(categoriesData, {
             header: true
-        });
+        }).data;
 
         // convert data
         //@ts-ignore (undefined items are filtered out, everything else has already been validated)
         let budget: Budget[] = budgetCSVData.map(convertBudgetCSV).filter(monthlyBudget => monthlyBudget);
+        //@ts-ignore (undefined items are filtered out, everything else has already been validated)
+        let transactions: Transaction[] = transactionCSVData.map(convertTransactionsCSV).filter(transaction => transaction);
 
         localStorage.setItem("urls", JSON.stringify(urls));
-        console.log(budgetData, transactionData, categoriesData);
         set({ budgetUrl: true, budget });
     },
 }))
