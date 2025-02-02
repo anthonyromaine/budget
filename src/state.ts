@@ -59,7 +59,7 @@ const ValidCategory = type({
     icon: 'string'
 });
 
-type Category = typeof ValidCategory.infer;
+export type Category = typeof ValidCategory.infer;
 
 interface BudgetState {
     budgetUrl: boolean,
@@ -147,7 +147,6 @@ export const useBudgetStore = create<BudgetState>((set, get) => ({
         let categories: Category[] = categoriesCSVData.map(convertCategoryCSV).filter(category => category);
 
         localStorage.setItem("urls", JSON.stringify(urls));
-        console.log({ budgetUrl: true, budget, transactions, categories });
         set({ budgetUrl: true, budget, transactions, categories });
     },
 }))
